@@ -1,0 +1,149 @@
+dist: trusty
+sudo: required
+notifications:
+  email: false
+env:
+  - RELEASE_TAG="release-$TRAVIS_BUILD_NUMBER"
+stages:
+  - build and publish
+  - deploy
+  - migrate
+if: tag IS blank
+
+jobs:
+  include:
+    - stage: build and publish
+      language: java
+      jdk: openjdk11
+      addons:
+        mariadb: '10.2'
+      install: skip
+      before_script:
+        - mysql -uroot < databases/create_databases.sql
+        - ./gradlew testMigrate
+      script:
+        - APPLICATION=allocations
+        - ./gradlew clean :applications:${APPLICATION}-server:build
+      before_deploy:
+        - git config --local user.name "Travis CI"
+        - git config --local user.email "travis@example.com"
+        - git tag -f $RELEASE_TAG
+      deploy: &github
+        provider: releases
+        api_key: $GITHUB_OAUTH_TOKEN
+        file:
+          - "applications/${APPLICATION}-server/build/libs/${APPLICATION}-server.jar"
+        skip_cleanup: true
+
+    - stage: build and publish
+      language: java
+      jdk: openjdk11
+      addons:
+        mariadb: '10.2'
+      install: skip
+      before_script:
+        - mysql -uroot < databases/create_databases.sql
+        - ./gradlew testMigrate
+      script:
+        - APPLICATION=backlog
+        - ./gradlew clean :applications:${APPLICATION}-server:build
+      before_deploy:
+        - git config --local user.name "Travis CI"
+        - git config --local user.email "travis@example.com"
+        - git tag -f $RELEASE_TAG
+      deploy:
+        <<: *github
+
+    - stage: build and publish
+      language: java
+      jdk: openjdk11
+      addons:
+        mariadb: '10.2'
+      install: skip
+      before_script:
+        - mysql -uroot < databases/create_databases.sql
+        - ./gradlew testMigrate
+      script:
+        - APPLICATION=registration
+        - ./gradlew clean :applications:${APPLICATION}-server:build
+      before_deploy:
+        - git config --local user.name "Travis CI"
+        - git config --local user.email "travis@example.com"
+        - git tag -f $RELEASE_TAG
+      deploy:
+        <<: *github
+
+    - stage: build and publish
+      language: java
+      jdk: openjdk11
+      addons:
+        mariadb: '10.2'
+      install: skip
+      before_script:
+        - mysql -uroot < databases/create_databases.sql
+        - ./gradlew testMigrate
+      script:
+        - APPLICATION=timesheets
+        - ./gradlew clean :applications:${APPLICATION}-server:build
+      before_deploy:
+        - git config --local user.name "Travis CI"
+        - git config --local user.email "travis@example.com"
+        - git tag -f $RELEASE_TAG
+      deploy:
+        <<: *github
+
+    - stage: deploy
+      language: bash
+      script:
+        - echo "Downloading allocations server $RELEASE_TAG"
+        - wget -P applications/allocations-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/allocations-server.jar
+      before_deploy:
+        - cp manifest-allocations.yml manifest.yml
+        - echo "Deploying allocations server $RELEASE_TAG"
+      deploy: &cloudfoundry
+        provider: cloudfoundry
+        api: $CF_API_URL
+        username: $CF_USERNAME
+        password: $CF_PASSWORD
+        organization: $CF_ORG
+        space: $CF_SPACE
+    - stage: deploy
+      language: bash
+      script:
+        - echo "Downloading backlog server $RELEASE_TAG"
+        - wget -P applications/backlog-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/backlog-server.jar
+      before_deploy:
+        - cp manifest-backlog.yml manifest.yml
+        - echo "Deploying backlog server $RELEASE_TAG"
+      deploy:
+        <<: *cloudfoundry
+    - stage: deploy
+      language: bash
+      script:
+        - echo "Downloading registration server $RELEASE_TAG"
+        - wget -P applications/registration-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/registration-server.jar
+      before_deploy:
+        - cp manifest-registration.yml manifest.yml
+        - echo "Deploying registration server $RELEASE_TAG"
+      deploy:
+        <<: *cloudfoundry
+    - stage: deploy
+      language: bash
+      script:
+        - echo "Downloading timesheets server $RELEASE_TAG"
+        - wget -P applications/timesheets-server/build/libs https://github.com/$GITHUB_USERNAME/pal-tracker-distributed/releases/download/$RELEASE_TAG/timesheets-server.jar
+      before_deploy:
+        - cp manifest-timesheets.yml manifest.yml
+        - echo "Deploying timesheets server $RELEASE_TAG"
+      deploy:
+        <<: *cloudfoundry
+    - stage: migrate
+      language: java
+      before_install:
+        - wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
+        - echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+        - sudo apt-get update
+        - sudo apt-get install cf-cli
+      script:
+        - cf login -a $CF_API_URL -u $CF_USERNAME -p $CF_PASSWORD -o $CF_ORG -s $CF_SPACE
+        - ./gradlew cfMigrate
