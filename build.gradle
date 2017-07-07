@@ -17,6 +17,7 @@ buildscript {
         springCloudVersion = "Finchley.SR2"
         springCloudServicesClientLibrariesVersion = "2.0.2.RELEASE"
         springCloudCommonsVersion = "2.0.0.RELEASE"
+        hystrixJavanicaVersion = "1.5.18"
     }
 
     repositories {
