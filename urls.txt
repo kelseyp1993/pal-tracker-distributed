@@ -1,0 +1,6 @@
+https://registration-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/users/{USER_ID}
+https://registration-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/accounts?ownerId={USER_ID}
+https://registration-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/projects?accountId={ACCOUNT_ID}
+https://allocations-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/allocations?projectId={PROJECT_ID}
+https://backlog-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/stories?projectId={PROJECT_ID}
+https://timesheets-pal-kelsey-pritsker.apps.evans.pal.pivotal.io/time-entries?userId={USER_ID}
