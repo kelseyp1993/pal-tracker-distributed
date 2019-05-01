@@ -21,5 +21,6 @@ include "databases:registration-database"
 include "databases:timesheets-database"
 
 include "platform-services:eureka-server"
+include "platform-services:oauth-server"
 
 include "integration-test"
