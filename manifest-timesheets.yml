@@ -6,6 +6,7 @@ applications:
   memory: 1G
   instances: 1
   env:
+    MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: *
     GRANT_TYPE: client_credentials
     JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 11.+ } }'
   services:
@@ -13,3 +14,4 @@ applications:
   - tracker-service-registry
   - tracker-circuit-breaker-dashboard
   - tracker-sso
+  - tracker-config-server
